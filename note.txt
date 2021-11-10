@@ -1,0 +1,53 @@
+chapter2：
+1. empty,zeros,ones,eye,rand,randn,
+    arange(1,10,3),linespace(1,10,3),randperm(10)
+    size(),shape
+    a+b, tensor.add(a,b), a.add_(b)--inplace
+    a is a tensor,(5,3),输出看起来是5行3列，实际上是3行5列（第一个元素的元素为第一列）：
+        索引的时候x=a[0,:],指的是第0列元素
+        index_select（a，0，torch.tensor([0,1])）.dim=0取行，dim=1，取列
+        nonzero（x）-->tensor返回  x中非0元素的坐标，
+    view(2,2,-1), view(-1)  #新tensor，但data共享，id不一致
+    .clone().view(-1) # 不共享
+2.广播机制，两个tensor dim不同的时候，适当复制元素再运算
+3.索引不开辟新的内存 y+=1，y的id不变 y=y+1：开辟新内存，id（y）改变。
+    y[:]=y+x, y+=x,y.add_x,torch.add(x,y,out=y).---> no change
+4.numpy 数组和 tensor的相互转化
+    a=torch.ones(5,3), b=a.numpy() #share data
+    a=np.ones(5),b=torch.from_numpy(a) # share data
+    a=torch.tensor([1,2,3]) # 不share，速度慢
+5.自动梯度：
+    1.requires_grad=True  /x.is_leaf
+    2..grad参数累加，类似与x为基础变量t，fn=g(t)+h(t)+... 其中g和h各占一条分支。最终grad为fn对t求导
+        使用方法：fn.backward(), print(x.grad)
+    3.张量fn无法直接用backward（）求grad：需要创造一个和fn同形的权重张量v，传递给backward（v），将张量fn转化为标量
+        类似于fn_final=torch.sum(fn*v), fn_final.backward(), x.grad
+    4.只改变data，不改变grad：要添加x.data.requires_grad.注意，在grad函数中包含的x，要带入实时的data。eg：y=x**x，grad=2x（如果xdata=100，此处应该改为100）
+    5.>>>with torch.no_grad(): >>>    y=x**2 >>>cont...此时y不被track，grad中不包含其倒数
+    6.y=2*x*x 注意次函数，求到时候会被分成两个函数，然后求和
+
+chapter3：
+1.线性回归：单层神经网络。eg预测房价走势，输出为连续值。
+   要素：模型、训练数据（training data set，label，feature）、损失函数（eg，均方差）、优化算法（eg：小批量随机梯度递减：mini-patch stochastic gradient descent）
+2.线性回归从零实现：
+    1. 创建training set---从真实的线性函数加上noise创建data.包括features 和labels
+    2. 读取小批量数据，（size，总样本包括feature-label，） ：
+        将样本总量的indices随机排序，备用，
+        将样本总量按照size顺序分组，记录起点的值（总共可分为多少个batch，+切片起点），
+        对indices切片（此时内部数据为随机数）
+        将该切片数据传入样本，得到小批量随机样本数据（yield）。
+        need:np.random.normal(0,0.01,(a,b).dtype=...)
+    3. 创建模型y=X*w+b  torch.mm(X,w)---矩阵相乘
+    4. 创建损失函数：（y_hat-y）**2/2。 矩阵
+    5. 创建优化算法： params,lr,batchsize.   ---params-=params.grad/batchsize*lr
+    6. 初始化w,b
+    7. training: trainning总次数，每次内容如下
+        整个数据集
+            每次mini，计算loss（sizeX1），张量。loss.sum().backward()
+                调用优化，其中计算了loss关于和b的grad，并更新w和b。
+                w、b的grad参数清零---下一次nimi
+        整体即使算一次loss，可观测loss.mean().item()
+
+    8. trainning完成，就可以得到想要的w和b
+
+
