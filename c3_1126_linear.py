@@ -70,8 +70,10 @@ while training_loss > 5.2e-5:
         l.backward()
         update(lr, [w, b], batch_size)
 
-        w.grad.data.zero_()
-        b.grad.data.zero_()
+        # w.grad.data.zero_()
+        # b.grad.data.zero_()
+        w.grad.zero_()
+        b.grad.zero_()
     train_l = loss(model(features, w, b), labels)
     print('epoch %d, loss %f' % (epoch + 1, train_l.mean().item()))
     training_loss = train_l.mean().item()
